@@ -1,0 +1,137 @@
+-- Script Name: Steal an Egg
+-- UI Library: Rayfield Library (โหลด UI สวยงามและใช้งานง่าย)
+
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "Steal an Egg 🥚",
+   LoadingTitle = "กำลังโหลดสคริปต์...",
+   LoadingSubtitle = "by Assistant",
+   ConfigurationSaving = {
+      Enabled = false
+   }
+})
+
+local MainTab = Rayfield:CreateTab("Main Features", 4483362458) -- ไอคอน tab
+
+-- Variables (ตัวแปรควบคุมการทำงาน)
+local AutoSteal = false
+local ESPEnabled = false
+local WalkSpeedValue = 16
+local ESPHighlights = {}
+
+-- Function: ESP Egg (สร้างกรอบ/เรืองแสงมองเห็นไข่ทะลุกำแพง)
+local function UpdateESP()
+    -- ลบ ESP เก่าก่อนอัปเดต
+    for _, highlight in pairs(ESPHighlights) do
+        if highlight then highlight:Destroy() end
+    end
+    ESPHighlights = {}
+
+    if not ESPEnabled then return end
+
+    -- ค้นหาไข่ใน Workspace (สแกนวัตถุที่มีคำว่า "Egg" ในชื่อ)
+    for _, obj in pairs(game.Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") or obj:IsA("Model") then
+            if string.find(string.lower(obj.Name), "egg") then
+                local highlight = Instance.new("Highlight")
+                highlight.Name = "EggESP"
+                highlight.FillColor = Color3.fromRGB(255, 215, 0) -- สีทอง
+                highlight.OutlineColor = Color3.fromRGB(255, 255, 255) -- เส้นขอบสีขาว
+                highlight.FillTransparency = 0.5
+                highlight.OutlineTransparency = 0
+                highlight.Adornee = obj
+                highlight.Parent = obj
+                table.insert(ESPHighlights, highlight)
+            end
+        end
+    end
+end
+
+-- Function 1: Auto Steal Egg (วาร์ปไปเก็บไข่อัตโนมัติ)
+Rayfield:CreateToggle({
+   Name = "Auto Steal Egg",
+   CurrentValue = false,
+   Flag = "AutoStealFlag",
+   Callback = function(Value)
+      AutoSteal = Value
+      task.spawn(function()
+          while AutoSteal do
+              local player = game.Players.LocalPlayer
+              local character = player.Character or player.CharacterAdded:Wait()
+              local rootPart = character:FindFirstChild("HumanoidRootPart")
+
+              if rootPart then
+                  -- ค้นหาไข่ที่ใกล้ที่สุดหรือไข่ในแมพ
+                  for _, obj in pairs(game.Workspace:GetDescendants()) do
+                      if not AutoSteal then break end
+                      if string.find(string.lower(obj.Name), "egg") then
+                          local targetPart = obj:IsA("BasePart") and obj or obj:FindFirstChildWhichIsA("BasePart")
+                          if targetPart then
+                              -- วาร์ปไปที่ไข่
+                              rootPart.CFrame = targetPart.CFrame + Vector3.new(0, 3, 0)
+                              task.wait(0.5) -- ระยะเวลาหน่วงระหว่างการขโมย
+                          end
+                      end
+                  end
+              end
+              task.wait(1)
+          end
+      end)
+   end,
+})
+
+-- Function 2: Speed (1 - 9999)
+Rayfield:CreateSlider({
+   Name = "WalkSpeed",
+   Range = {1, 9999},
+   Increment = 1,
+   Suffix = " Speed",
+   CurrentValue = 16,
+   Flag = "SpeedSlider",
+   Callback = function(Value)
+      WalkSpeedValue = Value
+      local player = game.Players.LocalPlayer
+      if player.Character and player.Character:FindFirstChild("Humanoid") then
+          player.Character.Humanoid.WalkSpeed = WalkSpeedValue
+      end
+   end,
+})
+
+-- ลูปคุมความเร็วคงที่ (กันเกมรีเซ็ตค่า Speed)
+task.spawn(function()
+    while task.wait(0.1) do
+        local player = game.Players.LocalPlayer
+        if player.Character and player.Character:FindFirstChild("Humanoid") then
+            if player.Character.Humanoid.WalkSpeed ~= WalkSpeedValue then
+                player.Character.Humanoid.WalkSpeed = WalkSpeedValue
+            end
+        end
+    end
+end)
+
+-- Function 3: ESP Egg (เปิด/ปิด มองทะลุมองหาไข่)
+Rayfield:CreateToggle({
+   Name = "ESP Egg",
+   CurrentValue = false,
+   Flag = "ESPEggFlag",
+   Callback = function(Value)
+      ESPEnabled = Value
+      UpdateESP()
+   end,
+})
+
+-- อัปเดต ESP อัตโนมัติเมื่อมีไข่เกิดใหม่ในแมพ
+game.Workspace.DescendantAdded:Connect(function(child)
+    if ESPEnabled then
+        task.wait(0.5)
+        UpdateESP()
+    end
+end)
+
+Rayfield:Notify({
+   Title = "Steal an Egg Loaded!",
+   Content = "ใช้งานสคริปต์ได้ทันที",
+   Duration = 5,
+   Image = 4483362458,
+})
